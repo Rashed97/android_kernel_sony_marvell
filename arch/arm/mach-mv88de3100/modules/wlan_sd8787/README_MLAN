@@ -1,0 +1,281 @@
+===============================================================================
+			U S E R  M A N U A L
+
+ Copyright (C) 2008-2012, Marvell International Ltd.
+ All Rights Reserved
+
+1) FOR DRIVER BUILD
+
+	Goto source code directory wlan_src/.
+	make [clean] build
+	The driver and utility binaries can be found in ../bin_xxxx directory.
+	The driver code supports Linux kernel up to 3.3.
+
+2) FOR DRIVER INSTALL
+
+	a) Copy firmware image sd8786_uapsta.bin | sd8787_uapsta.bin | ... to
+	   /system/etc/firmware/mrvl/ directory, create the directory if it doesn't exist.
+	b) Install WLAN driver,
+	   There are drv_mode, max_sta_bss, max_uap_bss etc. module parameters.
+		The bit settings of drv_mode are,
+			Bit 0 :  STA
+			Bit 1 :  uAP
+			Bit 2 :  WIFIDIRECT
+		The default drv_mode is 7.
+		max_sta_bss: Maximum number of STA BSS (default 1, max 1)
+		max_uap_bss: Maximum number of uAP BSS (default 1, max 2)
+		max_wfd_bss: Maximum number of WIFIDIRECT BSS (default 1, max 1)
+	   For example, to install SD8787 driver,
+		insmod mlan.ko
+		insmod sd8787.ko [drv_mode=3] [fw_name=mrvl/sd8787_uapsta.bin]
+	   To load driver in STA only mode,
+		insmod mlan.ko
+		insmod sd8787.ko drv_mode=1 [fw_name=mrvl/sd8787_uapsta.bin]
+	   To load driver in uAP only mode,
+		insmod mlan.ko
+		insmod sd8787.ko drv_mode=2 [fw_name=mrvl/sd8787_uapsta.bin]
+
+	   To switch mode between STA only, uAP only and uAPSTA etc. in run time,
+		echo drv_mode=1 > /proc/mwlan/config		// STA mode
+		echo drv_mode=2 > /proc/mwlan/config		// uAP mode
+		echo drv_mode=3 > /proc/mwlan/config		// STA+uAP mode
+		echo drv_mode=7 > /proc/mwlan/config		// STA+uAP+WIFIDIRECT mode
+	c) Uninstall WLAN driver,
+		ifconfig mlanX down
+		ifconfig uapX down
+		rmmod sd8xxx
+		rmmod mlan
+
+	To load driver with MFG firmware file, use mfg_mode=1 when insmod WLAN driver and
+	specify MFG firmware name if needed.
+
+	There are some other parameters for debugging purpose etc. Use modinfo to check details.
+	  drvdbg=<bit mask of driver debug message control>
+	  mac_addr=xx:xx:xx:xx:xx:xx <override the MAC address (in hex)>
+	  auto_ds=0|1|2 <use MLAN default | enable auto deepsleep | disable auto deepsleep>
+	  ps_mode=0|1|2 <use MLAN default | enable IEEE PS mode | disable IEEE PS mode>
+	  max_tx_buf=2048|4096|8192 <maximum AMSDU Tx buffer size>
+	  pm_keep_power=1|0 <PM keep power in suspend (default) | PM no power in suspend>
+	  cfg_11d=0|1|2 <use MLAN default | enable 11d | disable 11d>
+	  req_fw_nowait=0|1 <use request_firmware API (default) | use request_firmware_nowait API>
+	  fw_crc_check=1|0 <enable FW download CRC check (default) | disable FW download CRC check>
+	  init_cfg=<init config (MAC addresses, registers etc.) file name>
+		e.g. copy init_cfg.conf to firmware directory, init_cfg=mrvl/init_cfg.conf
+	  cal_data_cfg=<CAL data config file name>
+		e.g. copy cal_data.conf to firmware directory, cal_data_cfg=mrvl/cal_data.conf
+	  cfg80211_wext=<bit mask of CFG80211 and WEXT control>
+		Bit 0: STA WEXT
+		Bit 1: uAP WEXT
+		Bit 2: STA CFG80211
+		Bit 3: uAP CFG80211
+	  wq_sched_prio: Priority for work queue
+	  wq_sched_policy: Scheduling policy for work queue
+		(0: SCHED_NORMAL, 1: SCHED_FIFO, 2: SCHED_RR, 3: SCHED_BATCH, 5: SCHED_IDLE)
+		Please note that, both wq_sched_prio and wq_sched_policy should be provided
+		as module parameters. If wq_sched_policy is (0, 3 or 5), then wq_sched_prio
+		must be 0. wq_sched_prio should be 1 to 99 otherwise.
+
+	Note: On some platforms (e.g. PXA910/920) double quotation marks ("") need to used
+	for module parameters.
+		insmod sd8xxx.ko "<para1> <para2> ..."
+
+3) FOR DRIVER PROC & DEBUG
+
+	The following info are provided in /proc/net/mwlan/mlanX|uapX|wfdX/info,
+	on kernel 2.6.24 or later, the entry is /proc/mwlan/mlanX|uapX|wfdX/info.
+
+	driver_name = "wlan" or "uap"
+	driver_version = <chip id, firmware version and driver version>
+	interface_name = "mlanX", "uapX" or "wfdX"
+	bss_mode = "Ad-hoc" | "Managed" | "Auto" | "Unknown"
+	media_state = "Disconnected" | "Connected"
+	mac_address = <6-byte adapter MAC address>
+	multicase_count = <multicast address count>     // Only for STA
+	essid = <current SSID>                          // Only for STA
+	bssid = <current BSSID>                         // Only for STA
+	channel = <current channel>                     // Only for STA
+	region_code = <current region code>             // Only for STA
+	multicast_address[n] = <multicast address>      // Only for STA
+	num_tx_bytes = <number of bytes sent to device>
+	num_rx_bytes = <number of bytes received from device and sent to kernel>
+	num_tx_pkts = <number of packets sent to device>
+	num_rx_pkts = <number of packets received from device and sent to kernel>
+	num_tx_pkts_dropped = <number of Tx packets dropped by driver>
+	num_rx_pkts_dropped = <number of Rx packets dropped by driver>
+	num_tx_pkts_err = <number of Tx packets failed to send to device>
+	num_rx_pkts_err = <number of Rx packets failed to receive from device>
+	carrier "on" | "off"
+	tx queue "stopped" | "started"
+	tkip_mic_failures = 0                           // Only for uAP
+	ccmp_decrypt_errors = 0                         // Only for uAP
+	wep_undecryptable_count = 0                     // Only for uAP
+	wep_icv_error_count = 0                         // Only for uAP
+	decrypt_failure_count = 0                       // Only for uAP
+	mcast_tx_count = 0                              // Only for uAP
+	failed_count = 0                                // Only for uAP
+	retry_count = 0                                 // Only for uAP
+	multiple_retry_count = 0                        // Only for uAP
+	frame_duplicate_count = 0                       // Only for uAP
+	rts_success_count = 0                           // Only for uAP
+	rts_failure_count = 0                           // Only for uAP
+	ack_failure_count = 0                           // Only for uAP
+	rx_fragment_count = 0                           // Only for uAP
+	mcast_rx_frame_count = 0                        // Only for uAP
+	fcs_error_count = 0                             // Only for uAP
+	tx_frame_count = 0                              // Only for uAP
+	rsna_tkip_cm_invoked = 0                        // Only for uAP
+	rsna_4way_hshk_failures = 0                     // Only for uAP
+
+	The following debug info are provided in /proc/net/mwlan/mlanX|uapX|wfdX/debug,
+	on kernel 2.6.24 or later, the entry is /proc/mwlan/mlanX|uapX|wfdX/debug.
+
+	drvdbg = <bit mask of driver debug message control>
+	wmm_ac_vo = <number of packets sent to device from WMM AcVo queue>
+	wmm_ac_vi = <number of packets sent to device from WMM AcVi queue>
+	wmm_ac_be = <number of packets sent to device from WMM AcBE queue>
+	wmm_ac_bk = <number of packets sent to device from WMM AcBK queue>
+	max_tx_buf_size = <maximum Tx buffer size>
+	tx_buf_size = <current Tx buffer size>
+	curr_tx_buf_size = <current Tx buffer size in FW>
+	ps_mode = <0/1, CAM mode/PS mode>
+	ps_state = <0/1/2/3, awake state/pre-sleep state/sleep-confirm state/sleep state>
+	is_deep_sleep = <0/1, not deep sleep state/deep sleep state>    // Only for STA
+	wakeup_dev_req = <0/1, wakeup device not required/required>
+	wakeup_tries = <wakeup device count, cleared when device awake>
+	hs_configured = <0/1, host sleep not configured/configured>
+	hs_activated = <0/1, extended host sleep not activated/activated>
+	tx_pkts_queued = <number of Tx packets queued>
+	pps_uapsd_mode = <0/1, PPS/UAPSD mode disabled/enabled>     // Only for STA
+	sleep_pd = <sleep period in milliseconds>                   // Only for STA
+	qos_cfg = <WMM QoS info>                                    // Only for STA
+	tx_lock_flag = <0/1, Tx lock flag>                          // Only for STA
+	port_open = <0/1, port open flag>                           // Only for STA
+	scan_processing = <0/1, scan processing flag>               // Only for STA
+	num_bridge_pkts = <number of bridged packets>               // Only for uAP
+	num_drop_pkts = <number of dropped packets>                 // Only for uAP
+	num_tx_timeout = <number of Tx timeout>
+	num_cmd_timeout = <number of timeout commands>
+	timeout_cmd_id = <command id of the last timeout command>
+	timeout_cmd_act = <command action of the last timeout command>
+	last_cmd_id = <command id of the last several commands sent to device>
+	last_cmd_act = <command action of the last several commands sent to device>
+	last_cmd_index = <0 based last command index>
+	last_cmd_resp_id = <command id of the last several command responses received from device>
+	last_cmd_resp_index = <0 based last command response index>
+	last_event = <event id of the last several events received from device>
+	last_event_index = <0 based last event index>
+	num_cmd_h2c_fail = <number of commands failed to send to device>
+	num_cmd_sleep_cfm_fail = <number of sleep confirm failed to send to device>
+	num_tx_h2c_fail = <number of data packets failed to send to device>
+	num_cmdevt_c2h_fail = <number of commands/events failed to receive from device>
+	num_rx_c2h_fail = <number of data packets failed to receive from device>
+	num_int_read_fail = <number of interrupt read failures>
+	last_int_status = <last interrupt status>
+	num_evt_deauth = <number of deauthenticated events received from device>        // Only for STA
+	num_evt_disassoc = <number of disassociated events received from device>        // Only for STA
+	num_evt_link_lost = <number of link lost events received from device>           // Only for STA
+	num_cmd_deauth = <number of deauthenticate commands sent to device>             // Only for STA
+	num_cmd_assoc_ok = <number of associate commands with success return>           // Only for STA
+	num_cmd_assoc_fail = <number of associate commands with failure return>         // Only for STA
+	cmd_sent = <0/1, send command resources available/sending command to device>
+	data_sent = <0/1, send data resources available/sending data to device>
+	mp_rd_bitmap = <SDIO multi-port read bitmap>
+	curr_rd_port = <SDIO multi-port current read port>
+	mp_wr_bitmap = <SDIO multi-port write bitmap>
+	curr_wr_port = <SDIO multi-port current write port>
+	cmd_resp_received = <0/1, no cmd response to process/response received and yet to process>
+	event_received = <0/1, no event to process/event received and yet to process>
+	ioctl_pending = <number of ioctl pending>
+	tx_pending = <number of Tx packet pending>
+	rx_pending = <number of Rx packet pending>
+	malloc_count = <number of malloc done>
+	lock_count = <number of lock used>
+	mbufalloc_count = <number of mlan_buffer allocated>
+	main_state = <current state of the main process>
+	sdiocmd53w = <SDIO Cmd53 write status>
+	sdiocmd53r = <SDIO Cmd52 read status>
+	hs_skip_count = <number of skipped suspends>
+	hs_force_count = <number of forced suspends>
+
+	Issue SDIO cmd52 read/write through proc.
+	Usage:
+		echo "sdcmd52rw=<func> <reg> [data]" > /proc/mwlan/config
+	where the parameters:
+		func: The function number to use (0-7)
+		reg:  The address of the register
+		data: The value to write, read if the value is absent
+		For SDIO MMC driver, only function 0 and WLAN function access is allowed.
+		And there is a limitation for function 0 write, only vendor specific CCCR
+		registers (0xf0 -0xff) are permiited.
+	Examples:
+		echo "sdcmd52rw= 0 4" > /proc/mwlan/config      # read func 0 address 4
+		cat /proc/mwlan/config                          # display the register value
+		echo "sdcmd52rw= 1 3 0xf" > /proc/mwlan/config  # write 0xf to func 1 address 3
+
+	Use dmesg or cat /var/log/debug to check driver debug messages.
+
+	Update /proc/sys/kernel/printk to change message log levels.
+	For example,
+	echo 6 > /proc/sys/kernel/printk    (messages with a higher priority than 6
+	                                     will be printed to the console)
+	echo 15 > /proc/sys/kernel/printk   (all messages will be printed to console)
+
+
+===============================================================================
+        U S E R  M A N U A L  F O R  MLANUTL
+
+NAME
+    mlanutl - configure the additional parameters available for Marvell mdriver.
+
+SYNOPSIS
+    mlanutl -v
+    mlanutl <mlanX|uapX|wdfx> <command> [parameters] ...
+
+    mlanutl mlanX version
+	mlanutl mlanX bandcfg [l] [m] [n] [o]
+	mlanutl mlanX hostcmd <bg_scan.conf> bgscfg
+	mlanutl mlanX hostcmd <requesttpc.conf> requesttpc
+	mlanutl mlanX hostcmd <crypto_test.conf> crypto_test
+	mlanutl mlanX hostcmd <subevent.conf> subevent_get
+	mlanutl mlanX hostcmd <subevent.conf> subevent_set
+	mlanutl mlanX hostcmd <auto_tx.conf> auto_tx_get
+	mlanutl mlanX hostcmd <auto_tx.conf> nat_keep_alive
+	mlanutl mlanX hostcmd <auto_tx.conf> auto_tx_unreg
+	mlanutl mlanX hostcmd <txrate_cfg.conf> txrate_cfg_get
+	mlanutl mlanX hostcmd <txrate_cfg.conf> txrate_cfg_set_bg
+	mlanutl mlanX hostcmd <txrate_cfg.conf> txrate_cfg_set_bgn
+	mlanutl mlanX hostcmd <txpwrlimit_cfg.conf> txpwrlimit_cfg_get
+	mlanutl mlanX hostcmd <txpwrlimit_cfg.conf> txpwrlimit_2g_cfg_set
+	mlanutl mlanX hostcmd <txpwrlimit_cfg.conf> txpwrlimit_5g_cfg_set
+	mlanutl mlanX hostcmd <pad_cfg.conf> pad_cfg_get
+	mlanutl mlanX hostcmd <pad_cfg.conf> pad_cfg_set
+	mlanutl mlanX hostcmd <11n_2040coex.conf> 2040coex
+	mlanutl mlanX hostcmd <robust_btc.conf> robust_btc_get
+	mlanutl mlanX hostcmd <robust_btc.conf> robust_btc_enable
+	mlanutl mlanX hostcmd <robust_btc.conf> robust_btc_disable
+	mlanutl mlanX hostcmd <sdio_pulldown.conf> sdio_pulldown_get
+	mlanutl mlanX hostcmd <sdio_pulldown.conf> sdio_pulldown_set
+	mlanutl mlanX hostcmd <sdio_pulldown.conf> sdio_pulldown_disable
+	mlanutl mlanX httxcfg [<m>] [<n>]
+	mlanutl mlanX htcapinfo [<m>] [<n>]
+	mlanutl mlanX addbapara [<m> <n> <o> <p> <q>]
+	mlanutl mlanX aggrpriotbl [<m0> <n0> <m1> <n1> ... <m7> <n7>]
+	mlanutl mlanX addbareject [<m0> <m1> ... <m7>]
+	mlanutl mlanX delba <l> [<m> <n>]
+	mlanutl mlanX getdatarate
+	mlanutl mlanX txratecfg [l] [m] [n]
+	mlanutl mlanX passphrase [l]
+	mlanutl mlanX/uapX deauth [l]
+	mlanutl mlanX setuserscan [ARGS]
+	mlanutl mlanX getscantable [ARGS]
+	mlanutl mlanX deepsleep [l] [m]
+	mlanutl mlanX ipaddr ["<op>;<ipaddr>"]
+	mlanutl wfdX bssrole [l]
+	mlanutl mlanX countrycode [l]
+	mlanutl mlanX wakeupreason
+	mlanutl uapX wakeupreason
+	mlanutl mlanX listeninterval [l]
+	mlanutl mlanX drvdbg [n]
+	mlanutl mlanX hssetpara condition [GPIO# [gap]]
+	mlanutl mlanX hscfg [condition [[GPIO# [gap]]]]
+

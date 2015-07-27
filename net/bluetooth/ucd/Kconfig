@@ -1,0 +1,31 @@
+config BT_UCD_INPUT
+	tristate "Generic UCD input support"
+	depends on BT_L2CAP && BT_UCD && INPUT && EXPERIMENTAL
+	help
+	  UCD Input allows reception of Key and Mouse events from a
+	  Bluetooth device that transmits these events via the
+	  Connectionless Channel either as Linux events or HID
+	  Reports.
+
+	  Say Y here to compile UCD Input support into the kernel or
+	  say M to compile it as module (ucd_input.ko).
+
+config BT_UCD_SONY_INPUT
+	tristate "Sony UCD input support"
+	depends on BT_L2CAP && BT_UCD && INPUT && EXPERIMENTAL
+	help
+	  Add support for reception of data from SONY remotes via the
+	  Bluetooth UCD channel.  This is mainly to handle the KEY_POWER
+	  input.
+
+	  Say Y here to compile SONY UCD Input support into the kernel
+	  or say M to compile it as module (ucd_input_sony.ko).
+
+config BT_UCD_MARVELL_INPUT
+	tristate "MARVELL UCD input support"
+	depends on BT_L2CAP && BT_UCD && INPUT && EXPERIMENTAL
+	help
+	  Add support for reception of data from Bluetooth remotes via the
+	  Bluetooth UCD channel.  This is mainly to handle the KEY_POWER
+	  input.
+

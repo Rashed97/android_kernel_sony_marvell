@@ -1,0 +1,24 @@
+LOCAL_PATH := $(my-dir)
+include $(CLEAR_VARS)
+
+# Enable STA mode support
+CONFIG_STA_SUPPORT=y
+ifeq ($(CONFIG_STA_SUPPORT),y)
+LOCAL_CFLAGS += -DSTA_SUPPORT
+endif
+# Enable uAP mode support
+CONFIG_UAP_SUPPORT=y
+ifeq ($(CONFIG_UAP_SUPPORT),y)
+LOCAL_CFLAGS += -DUAP_SUPPORT
+endif
+CONFIG_WIFI_DIRECT_SUPPORT=y
+ifeq ($(CONFIG_WIFI_DIRECT_SUPPORT), y)
+LOCAL_CFLAGS += -DWIFI_DIRECT_SUPPORT
+endif
+
+LOCAL_MODULE := mlanutl
+OBJS = mlanutl.c
+LOCAL_SRC_FILES := $(OBJS)
+LOCAL_MODULE_TAGS := optional
+
+include $(BUILD_EXECUTABLE)
